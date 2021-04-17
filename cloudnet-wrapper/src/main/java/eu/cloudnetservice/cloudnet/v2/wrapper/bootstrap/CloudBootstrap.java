@@ -17,11 +17,18 @@
 
 package eu.cloudnetservice.cloudnet.v2.wrapper.bootstrap;
 
+import eu.cloudnetservice.cloudnet.v2.command.CommandManager;
+import eu.cloudnetservice.cloudnet.v2.console.ConsoleManager;
+import eu.cloudnetservice.cloudnet.v2.console.ConsoleRegistry;
+import eu.cloudnetservice.cloudnet.v2.console.SignalManager;
+import eu.cloudnetservice.cloudnet.v2.console.logging.JlineColoredConsoleHandler;
 import eu.cloudnetservice.cloudnet.v2.help.HelpService;
 import eu.cloudnetservice.cloudnet.v2.help.ServiceDescription;
 import eu.cloudnetservice.cloudnet.v2.lib.NetworkUtils;
 import eu.cloudnetservice.cloudnet.v2.lib.SystemTimer;
 import eu.cloudnetservice.cloudnet.v2.logging.CloudLogger;
+import eu.cloudnetservice.cloudnet.v2.logging.LoggingFormatter;
+import eu.cloudnetservice.cloudnet.v2.logging.handler.ColoredConsoleHandler;
 import eu.cloudnetservice.cloudnet.v2.wrapper.CloudNetWrapper;
 import eu.cloudnetservice.cloudnet.v2.wrapper.CloudNetWrapperConfig;
 import eu.cloudnetservice.cloudnet.v2.wrapper.util.FileUtility;
@@ -29,14 +36,19 @@ import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 
 import java.io.File;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Handler;
+import java.util.logging.Level;
 
 public class CloudBootstrap {
 
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) {
 
         System.setProperty("file.encoding", "UTF-8");
 
@@ -86,6 +98,34 @@ public class CloudBootstrap {
             return;
         }
 
+        CloudNetWrapperConfig cloudNetWrapperConfig = null;
+        try {
+            cloudNetWrapperConfig = new CloudNetWrapperConfig();
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(-1);
+        }
+        if (!Files.exists(cloudNetWrapperConfig.getConfigPath())) {
+            System.err.println("config.yml missing close wrapper");
+            System.exit(-1);
+        }
+        cloudNetWrapperConfig = cloudNetWrapperConfig.load();
+
+        ConsoleManager consoleManager = new ConsoleManager(new ConsoleRegistry(), new SignalManager());
+        Executors.newSingleThreadExecutor().execute(() -> {
+            if (!optionSet.has("noconsole")) {
+                consoleManager.useDefaultConsole();
+                consoleManager.setRunning(true);
+                consoleManager.startConsole();
+            } else {
+                while (!Thread.currentThread().isInterrupted()) {
+                    NetworkUtils.sleepUninterruptedly(Long.MAX_VALUE);
+                }
+            }
+
+
+            System.out.println("Shutting down now!");
+        });
         /*==============================================*/
         FileUtility.deleteDirectory(new File("temp"));
 
@@ -100,9 +140,7 @@ public class CloudBootstrap {
         }
 
         NetworkUtils.header();
-        CloudNetWrapperConfig cloudNetWrapperConfig = new CloudNetWrapperConfig(cloudNetLogging.getReader());
-        CloudNetWrapper cloudNetWrapper = new CloudNetWrapper(optionSet, cloudNetWrapperConfig, cloudNetLogging);
-
+        CloudNetWrapper cloudNetWrapper = new CloudNetWrapper(optionSet, cloudNetWrapperConfig, cloudNetLogging, consoleManager);
         if (optionSet.has("systemTimer")) {
             NetworkUtils.getExecutor().scheduleWithFixedDelay(SystemTimer::run, 0, 1, TimeUnit.SECONDS);
         }
@@ -110,29 +148,8 @@ public class CloudBootstrap {
         if (!cloudNetWrapper.bootstrap()) {
             System.exit(0);
         }
-
-        if (!optionSet.has("noconsole")) {
-            System.out.println("Use the command \"help\" for further information!");
-
-            String user = System.getProperty("user.name");
-
-            String commandLine;
-            final String prompt = user + '@' + cloudNetWrapper.getWrapperConfig().getWrapperId() + " $ ";
-            while ((commandLine = cloudNetLogging.readLine(prompt)) != null && CloudNetWrapper.RUNNING) {
-
-                try {
-                    if (!cloudNetWrapper.getCommandManager().dispatchCommand(commandLine)) {
-                        System.out.println("Command not found. Use the command \"help\" for further information!");
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        } else {
-            while (!Thread.currentThread().isInterrupted() && CloudNetWrapper.RUNNING) {
-                NetworkUtils.sleepUninterruptedly(Long.MAX_VALUE);
-            }
-        }
-        cloudNetLogging.info("Shutting down now!");
+        cloudNetWrapper.getConsoleManager().getConsoleRegistry().registerInput(cloudNetWrapper.getCommandManager());
+        cloudNetWrapper.getConsoleManager().changeConsoleInput(CommandManager.class);
+        System.out.println("Use the command \"§ehelp§r\" for further information!");
     }
 }
