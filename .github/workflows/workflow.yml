@@ -26,5 +26,5 @@ jobs:
         cp cloudnet-wrapper/target/CloudNet-Wrapper.jar temp/CloudNet-Wrapper/;
     - uses: actions/upload-artifact@master
       with:
-        name: CloudNet-V2
+        name: CloudNet-V2.2
         path: temp/
