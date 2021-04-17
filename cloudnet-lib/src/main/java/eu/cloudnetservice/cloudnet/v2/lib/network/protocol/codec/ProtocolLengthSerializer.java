@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.lib.network.protocol.codec;
 
 import eu.cloudnetservice.cloudnet.v2.lib.network.protocol.ProtocolBuffer;
@@ -5,14 +22,12 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
-/**
- * Created by Tareko on 31.05.2017.
- */
 public final class ProtocolLengthSerializer extends MessageToByteEncoder<ByteBuf> {
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) throws Exception {
-        ProtocolBuffer in = new ProtocolBuffer(msg), outbuffer = new ProtocolBuffer(out);
+    protected void encode(ChannelHandlerContext ctx, ByteBuf msg, ByteBuf out) {
+        ProtocolBuffer in = new ProtocolBuffer(msg);
+        ProtocolBuffer outBuffer = new ProtocolBuffer(out);
         int readableBytes = in.readableBytes(), lengthByteSpace = getVarIntSize(readableBytes);
 
         if (lengthByteSpace > 3) {
@@ -20,11 +35,11 @@ public final class ProtocolLengthSerializer extends MessageToByteEncoder<ByteBuf
         }
 
         out.ensureWritable(lengthByteSpace + readableBytes);
-        outbuffer.writeVarInt(readableBytes);
+        outBuffer.writeVarInt(readableBytes);
         out.writeBytes(in, in.readerIndex(), readableBytes);
     }
 
-    private int getVarIntSize(int value) {
+    private static int getVarIntSize(int value) {
         if ((value & -128) == 0) {
             return 1;
         } else if ((value & -16384) == 0) {

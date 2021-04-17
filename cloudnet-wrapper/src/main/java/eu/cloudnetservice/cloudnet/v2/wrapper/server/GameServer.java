@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.wrapper.server;
 
 import eu.cloudnetservice.cloudnet.v2.lib.ConnectableAddress;
@@ -225,7 +242,7 @@ public class GameServer extends AbstractScreenService implements ServerDispatche
                 try {
                     URLConnection urlConnection = new URL(
                         String.format("http://%s:%d/cloudnet/api/v1/download",
-                                      CloudNetWrapper.getInstance().getWrapperConfig().getCloudnetHost(),
+                                      CloudNetWrapper.getInstance().getWrapperConfig().getCloudNetHost(),
                                       CloudNetWrapper.getInstance().getWrapperConfig().getWebPort())).openConnection();
                     urlConnection.setRequestProperty("User-Agent", NetworkUtils.USER_AGENT);
 
@@ -407,7 +424,7 @@ public class GameServer extends AbstractScreenService implements ServerDispatche
             properties.setProperty(x, this.serverProcessMeta.getProperties().getProperty(x));
         }
 
-        properties.setProperty("server-ip", CloudNetWrapper.getInstance().getWrapperConfig().getInternalIP());
+        properties.setProperty("server-ip", CloudNetWrapper.getInstance().getWrapperConfig().getInternalIP().getHostAddress());
         properties.setProperty("server-port", serverProcessMeta.getPort() + NetworkUtils.EMPTY_STRING);
 
         String motd = properties.getProperty("motd");
@@ -497,10 +514,9 @@ public class GameServer extends AbstractScreenService implements ServerDispatche
                       .saveAsConfig(cloudPath.resolve("config.json"));
 
         new Document("connection",
-                     new ConnectableAddress(CloudNetWrapper.getInstance().getWrapperConfig().getCloudnetHost(),
-                                            CloudNetWrapper.getInstance().getWrapperConfig().getCloudnetPort()))
+                     new ConnectableAddress(CloudNetWrapper.getInstance().getWrapperConfig().getCloudNetHost(),
+                                            CloudNetWrapper.getInstance().getWrapperConfig().getCloudNetPort()))
             .saveAsConfig(cloudPath.resolve("connection.json"));
-
     }
 
     /**
@@ -513,16 +529,10 @@ public class GameServer extends AbstractScreenService implements ServerDispatche
         commandBuilder.append("java ");
         for (String command : serverProcessMeta.getJavaProcessParameters()) {
             commandBuilder.append(command).append(NetworkUtils.SPACE_STRING);
-
-            commandBuilder.append("-Dfile.encoding=UTF-8 -Dcom.mojang.eula.agree=true -Djline.terminal=jline.UnsupportedTerminal -Xmx")
-                          .append(serverProcessMeta.getMemory())
-                          .append("M -jar ");
-
         }
-
-        for (String command : serverProcessMeta.getServerProcessParameters()) {
-            commandBuilder.append(command).append(NetworkUtils.SPACE_STRING);
-        }
+        commandBuilder.append("-Dfile.encoding=UTF-8 -Dcom.mojang.eula.agree=true -Djline.terminal=jline.UnsupportedTerminal -Xmx")
+                      .append(serverProcessMeta.getMemory())
+                      .append("M -jar ");
 
         switch (serverGroup.getServerType()) {
             case CAULDRON:
@@ -537,6 +547,10 @@ public class GameServer extends AbstractScreenService implements ServerDispatche
             default:
                 commandBuilder.append("spigot.jar nogui");
                 break;
+        }
+
+        for (String command : serverProcessMeta.getServerProcessParameters()) {
+            commandBuilder.append(command).append(NetworkUtils.SPACE_STRING);
         }
 
         this.instance = Runtime.getRuntime().exec(commandBuilder.toString().split(NetworkUtils.SPACE_STRING), null, this.dir.toFile());
@@ -576,7 +590,7 @@ public class GameServer extends AbstractScreenService implements ServerDispatche
             Files.createDirectories(groupTemplates);
             MasterTemplateLoader templateLoader = new MasterTemplateLoader(
                 String.format("http://%s:%d/cloudnet/api/v1/download",
-                              CloudNetWrapper.getInstance().getWrapperConfig().getCloudnetHost(),
+                              CloudNetWrapper.getInstance().getWrapperConfig().getCloudNetHost(),
                               CloudNetWrapper.getInstance().getWrapperConfig().getWebPort()),
                 groupTemplates.resolve("template.zip"),
                 CloudNetWrapper.getInstance().getSimpledUser(),
@@ -699,35 +713,29 @@ public class GameServer extends AbstractScreenService implements ServerDispatche
         if (template != null && template.getBackend().equals(TemplateResource.MASTER)) {
             MasterTemplateDeploy masterTemplateDeploy =
                 new MasterTemplateDeploy(this.dir,
-                                         new ConnectableAddress(CloudNetWrapper.getInstance().getWrapperConfig().getCloudnetHost(),
+                                         new ConnectableAddress(CloudNetWrapper.getInstance().getWrapperConfig().getCloudNetHost(),
                                                                 CloudNetWrapper.getInstance().getWrapperConfig().getWebPort()),
                                          CloudNetWrapper.getInstance().getSimpledUser(),
                                          template,
                                          serverGroup.getName());
+
             try {
                 masterTemplateDeploy.deploy();
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
         } else if (template != null) {
             logger.info(String.format("Copying template from %s to local directory...", this.serverProcessMeta.getServiceId()));
             try {
-                FileUtility.copyFilesInDirectory(this.dir, Paths.get("local", "templates", serverGroup.getName(), template.getName()));
+                final Path templatePath = Paths.get("local", "templates", serverGroup.getName(), template.getName());
+                FileUtility.copyFilesInDirectory(this.dir, templatePath);
 
-                FileUtility.deleteDirectory(Paths.get("local",
-                                                      "templates",
-                                                      serverGroup.getName(),
-                                                      serverProcessMeta.getTemplate().getName(),
-                                                      "CLOUD"));
+                FileUtility.deleteDirectory(templatePath.resolve("CLOUD"));
 
-                Files.deleteIfExists(Paths.get("local",
-                                               "templates",
-                                               serverGroup.getName(),
-                                               template.getName(),
-                                               "plugins",
-                                               "CloudNetAPI.jar"));
-            } catch (Exception e) {
-                e.printStackTrace();
+                Files.deleteIfExists(templatePath.resolve(Paths.get("plugins", "CloudNetAPI.jar")));
+            } catch (IOException exception) {
+                logger.log(Level.SEVERE, "Error copying the template!", exception);
             }
             logger.log(Level.INFO,
                        String.format("Template %s was copied!", template.getName()));

@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.lib;
 
 import com.google.gson.Gson;
@@ -34,9 +51,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Created by Tareko on 24.05.2017.
- */
 public final class NetworkUtils {
 
     public static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36";
@@ -150,7 +164,7 @@ public final class NetworkUtils {
 
             try {
                 Files.createFile(path);
-                Files.write(path, stringBuilder.toString().getBytes());
+                Files.write(path, stringBuilder.toString().getBytes(StandardCharsets.UTF_8));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -182,9 +196,8 @@ public final class NetworkUtils {
 
     public static void header() {
         System.out.println();
-        System.out.print(
-            String.format("██████ █      ██████ █   █ █████ ██    █ █████ █████ [%s]%n",
-                          NetworkUtils.class.getPackage().getImplementationVersion()));
+        System.out.printf("██████ █      ██████ █   █ █████ ██    █ █████ █████ [%s]%n",
+                          NetworkUtils.class.getPackage().getImplementationVersion());
         System.out.println("█R     █E     █Z   █ █S  █ █Y  █ █M█   █ █       █");
         System.out.println("█      █      █    █ █   █ █   █ █  █  █ ████    █");
         System.out.println("█D     █Y     █T   █ █A  █ █N  █ █   █I█ █C      █");
@@ -195,12 +208,12 @@ public final class NetworkUtils {
     private static void headerOut() {
         System.out.println();
         System.out.println("«» The Cloud Network Environment Technology 2");
-        System.out.print(String.format("«» Support https://discord.gg/5NUhKuR      [%s]%n",
-                                       NetworkUtils.class.getPackage().getSpecificationVersion()));
-        System.out.print(String.format("«» Java %s @%s %s%n",
-                                       System.getProperty("java.version"),
-                                       System.getProperty("user.name"),
-                                       System.getProperty("os.name")));
+        System.out.printf("«» Support https://discord.cloudnetservice.eu/      [%s]%n",
+                          NetworkUtils.class.getPackage().getSpecificationVersion());
+        System.out.printf("«» Java %s @%s %s%n",
+                          System.getProperty("java.version"),
+                          System.getProperty("user.name"),
+                          System.getProperty("os.name"));
         System.out.println();
     }
 

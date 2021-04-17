@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.master.network;
 
 import eu.cloudnetservice.cloudnet.v2.lib.network.protocol.IProtocol;
@@ -11,9 +28,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
-/**
- * Created by Tareko on 02.06.2017.
- */
 public class CloudNetClientAuth extends SimpleChannelInboundHandler<Packet> implements PacketSender {
 
     private final Channel channel;
@@ -42,12 +56,8 @@ public class CloudNetClientAuth extends SimpleChannelInboundHandler<Packet> impl
             if (channel.eventLoop().inEventLoop()) {
                 channel.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
             } else {
-                channel.eventLoop().execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        channel.writeAndFlush(packet).addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE);
-                    }
-                });
+                channel.eventLoop().execute(() -> channel.writeAndFlush(packet)
+                                                         .addListener(ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE));
             }
         }
     }
@@ -58,14 +68,14 @@ public class CloudNetClientAuth extends SimpleChannelInboundHandler<Packet> impl
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+    public void channelInactive(ChannelHandlerContext ctx) {
         if ((!channel.isActive() || !channel.isOpen() || !channel.isWritable())) {
             channel.close().syncUninterruptibly();
         }
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Packet packet) throws Exception {
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Packet packet) {
         CloudNet.getLogger().finest(String.format("Receiving packet %s from %s%n", packet, channel.remoteAddress()));
         if (packet.getId() == (PacketRC.INTERNAL - 1)) {
             CloudNet.getInstance().getPacketManager().dispatchPacket(packet, this);
@@ -85,12 +95,7 @@ public class CloudNetClientAuth extends SimpleChannelInboundHandler<Packet> impl
         if (channel.eventLoop().inEventLoop()) {
             channel.writeAndFlush(object);
         } else {
-            channel.eventLoop().execute(new Runnable() {
-                @Override
-                public void run() {
-                    channel.writeAndFlush(object);
-                }
-            });
+            channel.eventLoop().execute(() -> channel.writeAndFlush(object));
         }
     }
 

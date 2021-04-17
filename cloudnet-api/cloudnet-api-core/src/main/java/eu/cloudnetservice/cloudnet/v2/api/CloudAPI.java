@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.api;
 
 import com.google.gson.reflect.TypeToken;
@@ -32,6 +49,8 @@ import net.md_5.bungee.api.ProxyServer;
 import org.bukkit.Bukkit;
 
 import java.lang.reflect.Type;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -62,7 +81,7 @@ public final class CloudAPI {
     //Init
     private CloudNetwork cloudNetwork = new CloudNetwork();
 
-    public CloudAPI(CloudConfigLoader loader, final Logger logger) {
+    public CloudAPI(CloudConfigLoader loader, final Logger logger) throws UnknownHostException {
         if (instance != null) {
             throw new IllegalStateException("CloudAPI already instantiated.");
         }
@@ -70,7 +89,8 @@ public final class CloudAPI {
         this.cloudConfigLoader = loader;
         this.logger = logger;
         this.config = loader.loadConfig();
-        this.networkConnection = new NetworkConnection(loader.loadConnnection(), new ConnectableAddress("0.0.0.0", 0));
+        this.networkConnection = new NetworkConnection(loader.loadConnection(),
+                                                       new ConnectableAddress(InetAddress.getByName("0.0.0.0"), 0));
         this.serviceId = config.getObject("serviceId", ServiceId.TYPE);
         this.memory = config.getInt("memory");
 
@@ -531,7 +551,7 @@ public final class CloudAPI {
                          String.format("Creating server log url: %s%n", serverId));
         String rnd = NetworkUtils.randomString(10);
         networkConnection.sendPacket(new PacketOutCreateServerLog(rnd, serverId));
-        ConnectableAddress connectableAddress = cloudConfigLoader.loadConnnection();
+        ConnectableAddress connectableAddress = cloudConfigLoader.loadConnection();
         return String.format("http://%s:%d/cloudnet/log?server=%s", connectableAddress.getHostName(), cloudNetwork.getWebPort(), rnd);
     }
 

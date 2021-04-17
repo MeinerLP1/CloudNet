@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.bridge.internal.command.proxied;
 
 import com.google.common.collect.ImmutableList;
@@ -32,9 +49,6 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-/**
- * Created by Tareko on 02.06.2017.
- */
 public final class CommandCloud extends Command implements TabExecutor {
 
     public CommandCloud() {
@@ -106,7 +120,7 @@ public final class CommandCloud extends Command implements TabExecutor {
                     commandSender.sendMessage(TextComponent.fromLegacyText("CloudNet " + NetworkUtils.class.getPackage()
                                                                                                            .getSpecificationVersion() + " #" + NetworkUtils.class
                         .getPackage()
-                        .getImplementationVersion() + " by Dytanic"));
+                        .getImplementationVersion() + " by CloudNetService"));
                     return;
                 } else if (args[0].equalsIgnoreCase("list") && commandSender.hasPermission("cloudnet.command.cloud.list")) {
                     commandSender.sendMessage(TextComponent.fromLegacyText(NetworkUtils.SPACE_STRING));
@@ -371,6 +385,8 @@ public final class CommandCloud extends Command implements TabExecutor {
                     CloudAPI.getInstance().sendCloudCommand("copy " + args[1]);
                     commandSender.sendMessage(TextComponent.fromLegacyText(CloudAPI.getInstance()
                                                                                    .getPrefix() + "The information was sent to the cloud"));
+                    commandSender.sendMessage(TextComponent.fromLegacyText(CloudAPI.getInstance()
+                                                                                   .getPrefix() + "Please check the output in the core terminal."));
                     return;
                 }
                 break;

@@ -1,20 +1,36 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.lib.server.info;
 
 import eu.cloudnetservice.cloudnet.v2.lib.service.ServiceId;
 
-/**
- * Created by Tareko on 02.07.2017.
- */
+import java.net.InetAddress;
+
 public class SimpleProxyInfo {
 
     private final ServiceId serviceId;
     private final boolean online;
-    private final String hostName;
+    private final InetAddress hostName;
     private final int port;
     private final int memory;
     private final int onlineCount;
 
-    public SimpleProxyInfo(ServiceId serviceId, boolean online, String hostName, int port, int memory, int onlineCount) {
+    public SimpleProxyInfo(ServiceId serviceId, boolean online, InetAddress hostName, int port, int memory, int onlineCount) {
         this.serviceId = serviceId;
         this.online = online;
         this.hostName = hostName;
@@ -39,7 +55,7 @@ public class SimpleProxyInfo {
         return memory;
     }
 
-    public String getHostName() {
+    public InetAddress getHostName() {
         return hostName;
     }
 

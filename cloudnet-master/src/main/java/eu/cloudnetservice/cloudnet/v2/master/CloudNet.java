@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.master;
 
 import eu.cloudnetservice.cloudnet.v2.command.CommandManager;
@@ -83,10 +100,10 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
     private final OptionSet optionSet;
     private final List<String> arguments;
     private final long startupTime = System.currentTimeMillis();
+    private final CloudModuleManager moduleManager;
     private WebServer webServer;
     private DatabaseBasicHandlers dbHandlers;
     private Collection<User> users;
-    private CloudModuleManager moduleManager;
 
     public CloudNet(CloudConfig config, CloudLogger cloudNetLogging, OptionSet optionSet, List<String> args) {
         if (instance != null) {
@@ -100,7 +117,6 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
         this.arguments = args;
 
         // We need the reader to stay open
-        //noinspection resource
         this.logger.getReader().addCompleter(commandManager);
         this.moduleManager = new CloudModuleManager();
     }
@@ -140,17 +156,7 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
 
         this.users = config.getUsers();
 
-        this.serverGroups.putAll(config.getServerGroups());
-        this.serverGroups.forEach((name, serverGroup) -> {
-            logger.info(String.format("Loading server group: %s", serverGroup.getName()));
-            setupGroup(serverGroup);
-        });
-
-        this.proxyGroups.putAll(config.getProxyGroups());
-        this.proxyGroups.forEach((name, proxyGroup) -> {
-            logger.info(String.format("Loading proxy group: %s", proxyGroup.getName()));
-            setupProxy(proxyGroup);
-        });
+        this.loadGroups();
 
         webServer = new WebServer(config.getWebServerConfig().getAddress(), config.getWebServerConfig().getPort());
 
@@ -159,7 +165,7 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
         this.initPacketHandlers();
 
         for (ConnectableAddress connectableAddress : config.getAddresses()) {
-            new CloudNetServer(connectableAddress);
+            cloudServers.add(new CloudNetServer(connectableAddress));
         }
 
         webServer.bind();
@@ -194,7 +200,7 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
 
         if (!optionSet.has("disable-modules")) {
             System.out.println("Enabling Modules...");
-            this.moduleManager.getModules().values().forEach(javaCloudModule -> this.moduleManager.enableModule(javaCloudModule));
+            this.moduleManager.getModules().values().forEach(this.moduleManager::enableModule);
         }
 
         eventManager.callEvent(new CloudInitEvent());
@@ -218,7 +224,7 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
 
         if (!optionSet.has("disable-modules")) {
             System.out.println("Disabling Modules...");
-            this.moduleManager.getModules().values().forEach(javaCloudModule -> this.moduleManager.disableModule(javaCloudModule));
+            this.moduleManager.getModules().values().forEach(this.moduleManager::disableModule);
         }
         dbHandlers.getStatisticManager().cloudOnlineTime(startupTime);
         this.databaseManager.save().clear();
@@ -238,7 +244,10 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
         RUNNING = false;
         this.logger.shutdownAll();
         try {
-            getExecutor().awaitTermination(10, TimeUnit.SECONDS);
+            boolean terminated = getExecutor().awaitTermination(10, TimeUnit.SECONDS);
+            if (!terminated) {
+                System.err.println("Executor service couldn't be terminated! At least one task seems to still run!");
+            }
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
@@ -268,44 +277,18 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
         }
     }
 
-    public void setupGroup(ServerGroup serverGroup) {
-        Path path;
-        for (Template template : serverGroup.getTemplates()) {
-            path = Paths.get("local", "templates", serverGroup.getName(), template.getName());
-            if (!Files.exists(path)) {
-                try {
-                    Files.createDirectories(path);
-                    Files.createDirectories(path.resolve("plugins"));
-                    FileCopy.insertData("files/server.properties", path.resolve("server.properties").toString());
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        path = Paths.get("local", "templates", serverGroup.getName(), "globaltemplate");
-        if (!Files.exists(path)) {
-            try {
-                Files.createDirectories(path);
-                Files.createDirectories(path.resolve("plugins"));
-                FileCopy.insertData("files/server.properties", path.resolve("server.properties").toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+    private void loadGroups() {
+        this.serverGroups.putAll(config.getServerGroups());
+        this.serverGroups.forEach((name, serverGroup) -> {
+            logger.info(String.format("Loading server group: %s", serverGroup.getName()));
+            setupGroup(serverGroup);
+        });
 
-    }
-
-    public void setupProxy(ProxyGroup proxyGroup) {
-        Path path = Paths.get("local/templates/" + proxyGroup.getName());
-        if (!Files.exists(path)) {
-            try {
-                Files.createDirectories(path);
-                Files.createDirectories(Paths.get("local", "templates", proxyGroup.getName(), "plugins"));
-                FileCopy.insertData("files/server.properties", path.resolve("server.properties").toString());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        this.proxyGroups.putAll(config.getProxyGroups());
+        this.proxyGroups.forEach((name, proxyGroup) -> {
+            logger.info(String.format("Loading proxy group: %s", proxyGroup.getName()));
+            setupProxy(proxyGroup);
+        });
     }
 
     private void initialCommands() {
@@ -406,6 +389,45 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
         return NetworkUtils.getExecutor();
     }
 
+    public void setupGroup(ServerGroup serverGroup) {
+        Path path;
+        for (Template template : serverGroup.getTemplates()) {
+            path = Paths.get("local", "templates", serverGroup.getName(), template.getName());
+            if (!Files.exists(path)) {
+                try {
+                    Files.createDirectories(path);
+                    Files.createDirectories(path.resolve("plugins"));
+                    FileCopy.insertData("files/server.properties", path.resolve("server.properties"));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        path = Paths.get("local", "templates", serverGroup.getName(), "globaltemplate");
+        if (!Files.exists(path)) {
+            try {
+                Files.createDirectories(path);
+                Files.createDirectories(path.resolve("plugins"));
+                FileCopy.insertData("files/server.properties", path.resolve("server.properties"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    public void setupProxy(ProxyGroup proxyGroup) {
+        Path path = Paths.get("local/templates/" + proxyGroup.getName());
+        if (!Files.exists(path)) {
+            try {
+                Files.createDirectories(path);
+                Files.createDirectories(Paths.get("local", "templates", proxyGroup.getName(), "plugins"));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public NetworkManager getNetworkManager() {
         return networkManager;
     }
@@ -485,8 +507,8 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
 
         wrappers.values().stream()
                 .flatMap(wrapper -> wrapper.getWaitingServices().values().stream())
-                .filter(entry -> entry.getServiceId().getGroup().equals(group))
                 .map(WaitingService::getServiceId)
+                .filter(serviceId -> serviceId.getGroup().equals(group))
                 .forEach(serviceIds::add);
 
         return serviceIds;
@@ -520,11 +542,11 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
     }
 
     @Override
-    public void reload() throws Exception {
+    public void reload() {
 
         if (!optionSet.has("disable-modules")) {
             System.out.println("Disabling modules...");
-            this.moduleManager.getModules().values().forEach(javaCloudModule -> this.moduleManager.disableModule(javaCloudModule));
+            this.moduleManager.getModules().values().forEach(this.moduleManager::disableModule);
         }
 
         this.eventManager.clearAll();
@@ -543,17 +565,7 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
 
         this.users = config.getUsers();
 
-        this.serverGroups.putAll(config.getServerGroups());
-        this.serverGroups.forEach((name, serverGroup) -> {
-            logger.info(String.format("Loading server group: %s%n", serverGroup.getName()));
-            setupGroup(serverGroup);
-        });
-
-        this.proxyGroups.putAll(config.getProxyGroups());
-        this.proxyGroups.forEach((name, proxyGroup) -> {
-            logger.info(String.format("Loading proxy group: %s%n", proxyGroup.getName()));
-            setupProxy(proxyGroup);
-        });
+        this.loadGroups();
 
         this.initialCommands();
         this.initWebHandlers();
@@ -566,7 +578,7 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
 
         if (!optionSet.has("disable-modules")) {
             System.out.println("Enabling Modules...");
-            this.moduleManager.getModules().values().forEach(javaCloudModule -> this.moduleManager.enableModule(javaCloudModule));
+            this.moduleManager.getModules().values().forEach(this.moduleManager::enableModule);
         }
 
         System.out.println("Updating wrappers...");
@@ -633,8 +645,8 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
 
         wrappers.values().stream()
                 .flatMap(wrapper -> wrapper.getWaitingServices().values().stream())
-                .filter(waitingService -> waitingService.getServiceId().getGroup().equals(group))
                 .map(WaitingService::getServiceId)
+                .filter(serviceId -> serviceId.getGroup().equals(group))
                 .forEach(serviceIds::add);
 
         return serviceIds;
@@ -830,6 +842,14 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
                      .sum();
     }
 
+    /**
+     * Calculates the amount of running servers for each template.
+     * The returned map contains all templates of the given server group.
+     *
+     * @param serverGroup the server group to retrieve the statistics from
+     *
+     * @return a map containing a mapping for each template of the given server group to the amount of currently running servers of that template.
+     */
     public Map<Template, Integer> getTemplateStatistics(final ServerGroup serverGroup) {
         Map<Template, Integer> templateMap = new HashMap<>();
 
@@ -844,9 +864,8 @@ public final class CloudNet extends EventKey implements Executable, Reloadable {
                 .map(WaitingService::getTemplate)
                 .forEach(template -> templateMap.merge(template, 1, Integer::sum));
 
-        // Add 1 to include server groups that are not currently running.
-        serverGroup.getTemplates()
-                   .forEach(template -> templateMap.merge(template, 1, Integer::sum));
+        // Set the value to 0 for templates that are not running
+        serverGroup.getTemplates().forEach(template -> templateMap.putIfAbsent(template, 0));
         return templateMap;
     }
 

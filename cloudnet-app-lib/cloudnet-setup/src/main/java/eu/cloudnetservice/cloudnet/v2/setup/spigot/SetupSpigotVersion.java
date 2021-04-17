@@ -1,3 +1,20 @@
+/*
+ * Copyright 2017 Tarek Hosni El Alaoui
+ * Copyright 2020 CloudNetService
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.cloudnetservice.cloudnet.v2.setup.spigot;
 
 import eu.cloudnetservice.cloudnet.v2.lib.NetworkUtils;
@@ -14,9 +31,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-/**
- * Created by Tareko on 25.05.2017.
- */
 public class SetupSpigotVersion implements Consumer<ConsoleReader> {
 
     private Path target;
@@ -68,7 +82,7 @@ public class SetupSpigotVersion implements Consumer<ConsoleReader> {
 
     private boolean installSpigot(ConsoleReader reader) {
         System.out.println(
-            "Choose a Spigot version [\"1.8.8\", \"1.9.4\", \"1.10.2\", \"1.11.2\", \"1.12.2\", \"1.13\", \"1.13.1\", \"1.13.2\", \"1.14\", \"1.14.1\", \"1.14.2\", \"1.14.3\", \"1.14.4\", \"1.15\", \"1.15.1\", \"1.15.2\"]");
+            "Choose a Spigot version [\"1.8.8\", \"1.9.4\", \"1.10.2\", \"1.11.2\", \"1.12.2\", \"1.13\", \"1.13.1\", \"1.13.2\", \"1.14\", \"1.14.1\", \"1.14.2\", \"1.14.3\", \"1.14.4\", \"1.15\", \"1.15.1\", \"1.15.2\", \"1.16.1\", \"1.16.2\", \"1.16.3\", \"1.16.4\"]");
         while (true) {
             try {
                 switch (reader.readLine().toLowerCase()) {
@@ -104,6 +118,14 @@ public class SetupSpigotVersion implements Consumer<ConsoleReader> {
                         return this.download.test("https://cdn.getbukkit.org/spigot/spigot-1.15.1.jar");
                     case "1.15.2":
                         return this.download.test("https://cdn.getbukkit.org/spigot/spigot-1.15.2.jar");
+                    case "1.16.1":
+                        return this.download.test("https://cdn.getbukkit.org/spigot/spigot-1.16.1.jar");
+                    case "1.16.2":
+                        return this.download.test("https://cdn.getbukkit.org/spigot/spigot-1.16.2.jar");
+                    case "1.16.3":
+                        return this.download.test("https://cdn.getbukkit.org/spigot/spigot-1.16.3.jar");
+                    case "1.16.4":
+                        return this.download.test("https://cdn.getbukkit.org/spigot/spigot-1.16.4.jar");
                     default:
                         System.out.println("This version is not supported!");
                         break;
