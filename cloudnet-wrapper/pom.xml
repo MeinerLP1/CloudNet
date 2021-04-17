@@ -1,12 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2017 Tarek Hosni El Alaoui
+  ~ Copyright 2020 CloudNetService
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
         <artifactId>cloudnet</artifactId>
-        <groupId>de.dytanic.cloudnet</groupId>
-        <version>dev-snapshot</version>
+        <groupId>eu.cloudnetservice.cloudnet.v2</groupId>
+        <version>2.2.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -15,26 +32,26 @@
 
     <dependencies>
         <dependency>
-            <groupId>de.dytanic.cloudnet</groupId>
+            <groupId>eu.cloudnetservice.cloudnet.v2</groupId>
+            <artifactId>cloudnet-setup</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>eu.cloudnetservice.cloudnet.v2</groupId>
             <artifactId>cloudnet-command</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>de.dytanic.cloudnet</groupId>
+            <groupId>eu.cloudnetservice.cloudnet.v2</groupId>
             <artifactId>cloudnet-web</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>de.dytanic.cloudnet</groupId>
+            <groupId>eu.cloudnetservice.cloudnet.v2</groupId>
             <artifactId>cloudnet-help</artifactId>
-            <version>${project.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>de.dytanic.cloudnet</groupId>
-            <artifactId>cloudnet-snakeconfig</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
@@ -44,6 +61,25 @@
             <version>${dependency.jopt-simple.version}</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>eu.cloudnetservice.cloudnet.v2</groupId>
+            <artifactId>cloudnet-api-bridge</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-jdk14</artifactId>
+            <version>${dependency.slf4j.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/commons-validator/commons-validator -->
+        <dependency>
+            <groupId>commons-validator</groupId>
+            <artifactId>commons-validator</artifactId>
+            <version>${dependency.commons-validator.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -59,6 +95,33 @@
                         <goals>
                             <goal>shade</goal>
                         </goals>
+                        <configuration>
+                            <minimizeJar>true</minimizeJar>
+                            <artifactSet>
+                                <excludes>
+                                    <exclude>com.squareup.okio:okio</exclude>
+                                    <exclude>com.squareup.okhttp3:okhttp</exclude>
+                                    <exclude>org.jetbrains.kotlin:kotlin-stdlib</exclude>
+                                    <exclude>org.jetbrains.kotlin:kotlin-stdlib-common</exclude>
+                                </excludes>
+                            </artifactSet>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ApacheLicenseResourceTransformer">
+                                </transformer>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ApacheNoticeResourceTransformer">
+                                    <addHeader>false</addHeader>
+                                </transformer>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.IncludeResourceTransformer">
+                                    <resource>LICENSE</resource>
+                                    <file>../LICENSE</file>
+                                </transformer>
+                            </transformers>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -69,7 +132,7 @@
                 <configuration>
                     <archive>
                         <manifestEntries>
-                            <Main-Class>de.dytanic.cloudnetwrapper.bootstrap.CloudNetLauncher</Main-Class>
+                            <Main-Class>eu.cloudnetservice.cloudnet.v2.wrapper.bootstrap.CloudNetLauncher</Main-Class>
                             <Version>${project.version}</Version>
                             <Implementation-Version>${service.version}</Implementation-Version>
                             <Specification-Version>${service.type}</Specification-Version>

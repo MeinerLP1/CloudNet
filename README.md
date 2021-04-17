@@ -35,40 +35,42 @@ Use of KVM virtualization or dedicated servers is recommended.
 
  ### Support
  
-  * Spigot-Support » 1.7.10 - 1.14
-    * PaperSpigot, TacoSpigot, Hose, Torch
-  * BungeeCord-Support » 1.7.10 - 1.14
-    * Flexpipe, HexaCord, Waterfall, TraverTine
+  * Spigot-Support » 1.8.8 - 1.15
+    * PaperSpigot, TacoSpigot, Spigot
+  * BungeeCord-Support » 1.8.8 - 1.15
+    * BungeeCord, HexaCord, Waterfall, TraverTine
     
 ### Discord
- *  [Discord Invite](https://discord.gg/CPCWr7w)
+
+* [Discord Invite](https://discord.cloudnetservice.eu/)
  
-### Developer
-If you would like to contribute to this repository, feel free to fork the repo and then create a pull request to our current dev branch. 
+### Developers
+If you would like to contribute to this repository, feel free to fork the repo and then create a pull request to our current development branch. 
   
 Maven:
 ```xml
 
     <repositories>
-        <repository>
-            <id>cloudnet-repo</id>
-            <url>https://cloudnetservice.eu/repositories</url>
-        </repository>
+      <repository>
+        <id>cloudnet-releases</id>
+        <name>CloudNet Release Repository</name>
+        <url>https://repo.cloudnetservice.eu/repository/releases/</url>
+      </repository>
     </repositories>
 
     <dependencies>
         <!-- Spigot/BungeeCord -->
         <dependency>
-            <groupId>de.dytanic.cloudnet</groupId>
+            <groupId>eu.cloudnetservice.cloudnet.v2</groupId>
             <artifactId>cloudnet-api-bridge</artifactId>
-            <version>2.1.17</version>
+            <version>2.2.0</version>
             <scope>provided</scope>
         </dependency>
          <!-- CloudNet Core -->
         <dependency>
-            <groupId>de.dytanic.cloudnet</groupId>
-            <artifactId>cloudnet-core</artifactId>
-            <version>2.1.17</version>
+            <groupId>eu.cloudnetservice.cloudnet.v2</groupId>
+            <artifactId>cloudnet-master</artifactId>
+            <version>2.2.0</version>
             <scope>provided</scope>
         </dependency>
      </dependencies>
